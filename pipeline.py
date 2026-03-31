@@ -1,7 +1,7 @@
 """Content Pipeline Orchestrator - Agent SDK powered.
 
 Uses query() with subagent delegation for the full content pipeline.
-Each agent runs in its own context with specific MCP tool servers.
+Includes Distributor Value Analyst for scoring content impact.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from claude_agent_sdk import query, ClaudeAgentOptions, AgentDefinition, ResultM
 from agents.definitions import (
     DOMAIN_RESEARCHER, SEO_RESEARCHER, OUTLINE_ARCHITECT,
     WRITER, FACT_CHECKER, EDITOR_IN_CHIEF, CANARY,
+    DISTRIBUTOR_VALUE_ANALYST,
 )
 from tools.ahrefs_tools import ahrefs_server
 from tools.contentful_tools import contentful_server
@@ -33,13 +34,14 @@ def _build_options() -> ClaudeAgentOptions:
         agents={
             "domain-researcher": AgentDefinition(**DOMAIN_RESEARCHER),
             "seo-researcher": AgentDefinition(**SEO_RESEARCHER),
+            "value-analyst": AgentDefinition(**DISTRIBUTOR_VALUE_ANALYST),
             "outline-architect": AgentDefinition(**OUTLINE_ARCHITECT),
             "writer": AgentDefinition(**WRITER),
             "fact-checker": AgentDefinition(**FACT_CHECKER),
             "editor-in-chief": AgentDefinition(**EDITOR_IN_CHIEF),
             "canary": AgentDefinition(**CANARY),
         },
-        max_turns=60,
+        max_turns=70,
     )
 
 
@@ -51,30 +53,33 @@ async def run_pipeline_async(topic: str, verbose: bool = False) -> dict:
 TOPIC: {topic}
 
 ## Step 1: Domain Research
-Use domain-researcher agent. Pass the topic. It will check Contentful for existing content (source of truth) and research the topic. Get a research brief covering technical details, distributor pain points, sales angles, DWC product relevance. If this exact topic already exists in Contentful, STOP and report that it's already covered.
+Use domain-researcher agent. Pass the topic. It will check Contentful for existing content and research the topic. If this topic already exists in Contentful, the researcher should identify what's already covered and suggest a complementary angle that hasn't been written yet. Do NOT stop the pipeline. Instead, refine the topic to something unique and complementary.
 
 ## Step 2: SEO/GEO Research
-Use seo-researcher agent. Pass the topic AND domain brief. It will query Ahrefs live for keywords, SERPs, and cannibalization checks.
+Use seo-researcher agent. Pass the (potentially refined) topic AND domain brief. It will query Ahrefs live for keywords, SERPs, and cannibalization checks.
 
-## Step 3: Content Brief
-Combine both briefs. Note target word count, primary keyword, top pain points.
+## Step 3: Value Analysis
+Use value-analyst agent. Pass the topic, domain brief, and SEO brief. It will score the content opportunity on four dimensions: deal impact, sales enablement, contractor question frequency, and strategic value to DWC. If the total score is below 50, note the analyst's suggested angle adjustment and consider refining the topic before proceeding. If below 30, report back that this topic isn't worth pursuing and suggest the analyst's alternative.
 
-## Step 4: Outline
+## Step 4: Content Brief
+Combine the domain research, SEO research, and value analysis into a content brief. Include the value analyst's angle recommendations.
+
+## Step 5: Outline
 Use outline-architect agent. Pass the full content brief.
 
-## Step 5: Write
+## Step 6: Write
 Use writer agent. Pass the outline AND content brief.
 
-## Step 6: Fact Check
+## Step 7: Fact Check
 Use fact-checker agent. Pass the article and content brief. Note if accuracy < 80.
 
-## Step 7: Edit
+## Step 8: Edit
 Use editor-in-chief agent. Pass the fact-checked article.
 
-## Step 8: Publish
+## Step 9: Publish
 Use canary agent. Pass the final article (title, slug, body_markdown, meta_description, word_count). It will check the slug doesn't already exist in Contentful before publishing.
 
-Pass FULL output from each agent to the next. Report final title, slug, word count, and Contentful status."""
+Pass FULL output from each agent to the next. Report final title, slug, word count, value score, and Contentful status."""
 
     result_data = {"topic": topic, "status": "unknown"}
 
