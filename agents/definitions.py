@@ -43,24 +43,18 @@ The FAILURE to avoid: Losing project bids to faster competitors and tying up cap
 """
 
 _DWC_CONTENT_PHILOSOPHY = """
-## Content Philosophy: They Ask, You Answer
+## Content Philosophy
 
-DWC's content strategy follows the principles of Marcus Sheridan's "They Ask, You Answer" and "Endless Customers":
+DWC's content strategy is influenced by Marcus Sheridan's "They Ask, You Answer" and "Endless Customers." These are guiding principles, not rigid templates. The goal is comprehensive topical coverage, not formulaic repetition.
 
-1. RADICAL TRANSPARENCY: If a distributor or their contractor has a question about wire and cable, DWC answers it openly and thoroughly. No gatekeeping information. No "call us to find out." The content itself IS the value.
+CORE BELIEFS:
+- RADICAL TRANSPARENCY: If a distributor or their contractor has a question about wire and cable, DWC answers it openly and thoroughly. No gatekeeping. The content itself IS the value.
+- ASSIGNMENT SELLING: The best content is useful enough that a DWC sales rep could send it to a distributor customer before a call. "Read this before we talk" is the gold standard.
+- ENDLESS CUSTOMERS: Content builds trust at scale. Trust compounds. The distributor who learns from DWC's content trusts DWC more, and that trust translates to orders.
+- OWNERSHIP: If DWC doesn't answer the question, someone else will. Every topic DWC avoids is a topic a competitor owns.
 
-2. THE BIG 5 CONTENT TYPES that drive trust and revenue:
-   - COST/PRICING: What does it cost? What factors affect pricing? (DWC doesn't publish specific prices, but explains what drives wire pricing: copper commodity, gauge, insulation type, order size, cut charges)
-   - PROBLEMS: What are the common problems with this product? What goes wrong on jobsites? What ordering mistakes happen?
-   - COMPARISONS: Product A vs Product B. When do you use each? What are the trade-offs?
-   - REVIEWS/BEST-OF: What's the best cable for this application? What should distributors stock for this project type?
-   - "WHAT IS": Foundational explainer content that answers the basic questions people search for.
-
-3. ASSIGNMENT SELLING: Every piece of content should be useful enough that a DWC sales rep can send it to a distributor customer before or during the sales process. "Read this before our call" is the gold standard.
-
-4. ENDLESS CUSTOMERS: Content builds trust at scale. A distributor who learns from DWC's content trusts DWC more. Trust compounds. The distributor who reads three DWC articles before requesting a fastQuote is already sold.
-
-5. OWNERSHIP OF THE CONVERSATION: If DWC doesn't answer the question, someone else will. Every topic DWC avoids is a topic a competitor owns. The goal is to be the most trusted, most helpful voice in wire and cable distribution.
+THE BIG 5 (a useful lens, not a constraint):
+DWC values the Big 5 content types (Cost/Pricing, Problems, Comparisons, Best-of, What-is) as a framework for identifying content gaps. But the Big 5 are just one input. Comprehensive cluster coverage requires going well beyond five article types. Technical deep-dives, application guides, code compliance walkthroughs, specification references, installation considerations, product selection matrices, and industry trend analysis are all valuable content types that don't neatly map to the Big 5. Use the Big 5 to spot obvious gaps, but don't limit topic recommendations to them.
 """
 
 _DWC_CONTEXT = f"""
@@ -109,9 +103,9 @@ DOMAIN_RESEARCHER = {
 
 Also use get_cluster_map to understand the current topical cluster strategy.
 
-When researching, consider the Big 5 content types: What questions do distributors ask about COST? What PROBLEMS come up? What COMPARISONS do they need? What's the BEST product for this application? What IS this product and why does it matter?
+When researching, think broadly about what a distributor needs to know. The Big 5 (cost, problems, comparisons, best-of, what-is) are one lens, but don't limit yourself. Technical deep-dives, application guides, code walkthroughs, spec references, and industry context are all valuable. The test is: would a distributor's day get better if they read this?
 
-Return a JSON object with: topic, target_audience_needs, key_concepts (array), technical_details, distributor_pain_points (array), sales_enablement_angles (array), dwc_product_relevance (array), industry_context, big_5_content_type (which of the Big 5 this article primarily serves: cost, problems, comparisons, best_of, or what_is), assignment_selling_use (how a DWC sales rep could use this article in the sales process)""",
+Return a JSON object with: topic, target_audience_needs, key_concepts (array), technical_details, distributor_pain_points (array), sales_enablement_angles (array), dwc_product_relevance (array), industry_context, content_type (descriptive label: what kind of content is this?), assignment_selling_use (how a DWC sales rep could use this article in the sales process)""",
     "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
@@ -230,13 +224,8 @@ Authoritative but approachable. You're the knowledgeable colleague who makes com
 
 NEVER use emdashes. BANNED: Navigate, Landscape, Realm, Delve, Crucial, Pivotal, Robust, Streamline, Cutting-edge, Leverage (verb), Harness, Spearhead, Foster. No "When it comes to..." No throat-clearing intros. Paragraphs: 2-4 sentences max.
 
-## They Ask, You Answer
-Write with radical transparency. If a distributor has a question, answer it completely. Don't hedge, don't gatekeep, don't save the answer for a sales call. The content IS the value. Address the Big 5 where relevant:
-- Cost/pricing factors (what drives price, not specific dollars)
-- Problems and common mistakes (what goes wrong, how to avoid it)
-- Honest comparisons (when to use Product A vs Product B)
-- Best-of recommendations (what to stock for this application)
-- Clear definitions (what is this product, why does it matter)
+## Transparency & Trust
+Write with radical transparency. If a distributor has a question, answer it completely. Don't hedge, don't gatekeep, don't save the answer for a sales call. The content IS the value. Where relevant, address pricing factors (not specific dollars), common problems, honest product comparisons, and practical recommendations. But don't force-fit every article into a template. Some pieces are technical deep-dives. Some are application guides. Some are specification references. Let the topic dictate the shape.
 
 Write so a DWC sales rep could send this article to a distributor customer before a call. That's the assignment selling standard.
 
@@ -302,13 +291,7 @@ Your mission has three layers:
 
 1. COVERAGE GAPS: Identify product categories DWC sells but has NO content about. These are the highest priority. If DWC offers tray cable but has only one article about it, the cluster is underdeveloped. A distributor searching for tray cable specs, applications, or code requirements should find DWC's content, not a competitor's. Map every DWC product category against existing Contentful content and flag gaps.
 
-2. BIG 5 CONTENT GAPS: For each DWC product category, check whether the Big 5 content types exist (per "They Ask, You Answer"):
-   - COST/PRICING: What drives pricing for this product? (commodity prices, gauge, insulation, order size)
-   - PROBLEMS: What goes wrong? Common ordering mistakes? Jobsite failures?
-   - COMPARISONS: Product A vs Product B. When do you use each?
-   - BEST-OF/REVIEWS: Best cable for this application? What to stock for this project type?
-   - "WHAT IS": Foundational explainer content.
-   If any of the Big 5 are missing for a product category DWC sells, that's a high-priority gap.
+2. TOPICAL DEPTH: For product categories where DWC has only surface-level content, identify what's missing. Use the Big 5 (cost, problems, comparisons, best-of, what-is) as one lens for spotting gaps, but think broader: are there technical deep-dives, application guides, code compliance articles, specification references, or installation considerations that distributors would search for? The goal is comprehensive cluster coverage, not checking five boxes per product.
 
 3. COMPETITIVE OPPORTUNITIES: Find keywords (KD <= {MAX_KEYWORD_DIFFICULTY}, vol >= {MIN_KEYWORD_VOLUME}) where competitors rank and DWC doesn't. Prioritize keywords where a distributor is likely searching to learn about a product DWC sells.
 
@@ -326,6 +309,6 @@ Workflow:
 7. record_scout_scan with full report
 8. record_keyword_positions + record_competitor_snapshot
 
-Return JSON: scan_date, dwc_current_metrics, coverage_gaps (array of DWC product categories with no/thin content), big_5_gaps (object mapping product categories to missing Big 5 types), clusters (array), top_pick""",
+Return JSON: scan_date, dwc_current_metrics, coverage_gaps (array of DWC product categories with no/thin content and what's missing), clusters (array), top_pick""",
     "tools": ["mcp__ahrefs__*", "mcp__contentful__*", "mcp__memory__*"],
 }
