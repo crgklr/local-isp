@@ -4,6 +4,9 @@ Contentful is the source of truth for existing content. Agents that need
 to check what's already written query Contentful directly. Memory (SQLite)
 tracks keyword positions, clusters, and competitive scan history.
 
+Model assignments: Opus for judgment/writing/editorial, Sonnet for
+research/tool-use, Haiku for simple API routing.
+
 Content philosophy grounded in:
 - DWC StoryBrand BrandScript (hero=distributor, guide=DWC)
 - Marcus Sheridan's "They Ask, You Answer" and "Endless Customers"
@@ -17,6 +20,9 @@ from config.settings import (
     DWC_DOMAIN, DWC_PRODUCT_CATEGORIES, DWC_SERVICES, DWC_VALUE_PROPOSITIONS,
     DWC_COMPETITORS, TARGET_AUDIENCE, MAX_KEYWORD_DIFFICULTY, MIN_KEYWORD_VOLUME,
     SCOUT_COMPETITOR_LIMIT,
+    MODEL_ORCHESTRATOR, MODEL_DOMAIN_RESEARCHER, MODEL_SEO_RESEARCHER,
+    MODEL_VALUE_ANALYST, MODEL_OUTLINE_ARCHITECT, MODEL_WRITER,
+    MODEL_FACT_CHECKER, MODEL_EDITOR, MODEL_CANARY, MODEL_SCOUT,
 )
 
 _DWC_BRANDSCRIPT = """
@@ -94,6 +100,7 @@ existing piece doesn't.
 """
 
 DOMAIN_RESEARCHER = {
+    "model": MODEL_DOMAIN_RESEARCHER,
     "description": "Wire & cable domain expert who researches topics electrical distributors need to win more deals",
     "prompt": f"""You are a senior domain expert in electrical wire and cable master distribution with 25+ years of experience. You think through the lens of "They Ask, You Answer": if distributors or their contractors are asking about it, DWC needs to answer it thoroughly and transparently.
 
@@ -110,6 +117,7 @@ Return a JSON object with: topic, target_audience_needs, key_concepts (array), t
 }
 
 SEO_RESEARCHER = {
+    "model": MODEL_SEO_RESEARCHER,
     "description": "SEO/GEO strategist who queries Ahrefs in real time for keyword data, SERP analysis, and competitive intelligence",
     "prompt": f"""You are an expert SEO and GEO strategist for {DWC_DOMAIN}. You have live Ahrefs access. You MUST use it.
 
@@ -132,6 +140,7 @@ Return JSON: primary_keyword, secondary_keywords, long_tail_keywords, keyword_da
 }
 
 DISTRIBUTOR_VALUE_ANALYST = {
+    "model": MODEL_VALUE_ANALYST,
     "description": "Evaluates content value through the eyes of an electrical distributor who wants to learn, sell more, and win more project bids",
     "prompt": f"""You are the voice of the electrical distributor inside DWC's content operation. You have deep empathy for what it's like to work at a distribution branch: the pressure to hit sales targets, the contractor who calls with a spec question you're not sure about, the frustration of losing a bid because the competition knew something you didn't.
 
@@ -200,6 +209,7 @@ Return JSON with:
 }
 
 OUTLINE_ARCHITECT = {
+    "model": MODEL_OUTLINE_ARCHITECT,
     "description": "Content strategist who creates comprehensive outlines from research briefs",
     "prompt": f"""You create outlines for authoritative B2B wire and cable content that will rank #1 on Google and surface through every AI discovery channel.
 
@@ -216,6 +226,7 @@ Return JSON: title (under 60 chars), meta_description (150-160 chars), h1, secti
 }
 
 WRITER = {
+    "model": MODEL_WRITER,
     "description": "Expert wire & cable content writer who crafts authoritative, SEO-optimized articles",
     "prompt": """You write for electrical distributors. You understand their world through DWC's BrandScript: wire is the last thing on their mind until it's the first thing on their contractor's. They want to win bids, avoid inventory risk, and be the go-to resource for their contractors. Your job is to make them smarter and more confident.
 
@@ -246,6 +257,7 @@ Return JSON: title, meta_description, slug, body_markdown, word_count""",
 }
 
 FACT_CHECKER = {
+    "model": MODEL_FACT_CHECKER,
     "description": "Fact checker who validates technical accuracy, DWC product alignment, and audience targeting",
     "prompt": f"""You fact-check wire and cable content.
 
@@ -260,6 +272,7 @@ Return JSON: corrections_made (array), accuracy_score (1-100), alignment_score (
 }
 
 EDITOR_IN_CHIEF = {
+    "model": MODEL_EDITOR,
     "description": "Seasoned journalist who polishes articles for cohesion and removes AI writing patterns",
     "prompt": """You are the Editor in Chief. You hate emdashes, AI phrases ("In today's rapidly evolving landscape", "It's worth noting", "Let's delve", "When it comes to", "As we navigate"), hollow superlatives, passive hedging, repeated transitions, generic conclusions, and filler words (very, really, actually, basically, essentially, literally).
 
@@ -270,6 +283,7 @@ Return JSON: edits_made (array), overall_assessment (2-3 sentences), final_artic
 }
 
 CANARY = {
+    "model": MODEL_CANARY,
     "description": "Publishing agent that pushes articles to Contentful as drafts and records them in memory",
     "prompt": """When given a final article:
 1. Use search_content_by_slug to verify this slug doesn't already exist in Contentful
@@ -280,6 +294,7 @@ CANARY = {
 }
 
 COMPETITIVE_SCOUT = {
+    "model": MODEL_SCOUT,
     "description": f"Competitive intelligence scout who finds coverage gaps and low-hanging fruit keywords (KD <= {MAX_KEYWORD_DIFFICULTY}) via Ahrefs",
     "prompt": f"""You scout for {DWC_DOMAIN}.
 
