@@ -1,7 +1,6 @@
-"""Email service for sending suggestions and receiving replies.
+"""Email service for sending scored suggestions and receiving replies.
 
-Supports SendGrid (preferred) with SMTP fallback. Inbound reply
-parsing via IMAP polling.
+Supports SendGrid (preferred) with SMTP fallback. Inbound reply parsing via IMAP.
 """
 
 from __future__ import annotations
@@ -24,7 +23,6 @@ from config.settings import (
 
 
 def send_suggestions_email(report: dict) -> dict:
-    """Send the daily suggestions email with numbered options."""
     clusters = report.get("clusters", [])
     scan_date = report.get("scan_date", datetime.now().strftime("%Y-%m-%d"))
     top_pick = report.get("top_pick", {})
@@ -39,13 +37,14 @@ def send_suggestions_email(report: dict) -> dict:
 def _build_suggestions_html(clusters: list, top_pick: dict, scan_date: str) -> str:
     html = f"""<html><body style="font-family: Arial, sans-serif; max-width: 680px; margin: 0 auto; color: #333;">
 <h2 style="color: #1a5276;">Daily Content Opportunities - {scan_date}</h2>
-<p style="color: #666; font-size: 14px;">Your competitive scout scanned the landscape and found these opportunities.
+<p style="color: #666; font-size: 14px;">Your competitive scout scanned the landscape and scored each opportunity for distributor value.
 Reply with the <strong>number</strong> of the topic you'd like me to write.</p>"""
 
     if top_pick and top_pick.get("title"):
+        tp_score = top_pick.get("value_score", top_pick.get("total_score", "?"))
         html += f"""
 <div style="background: #eaf2f8; border-left: 4px solid #2980b9; padding: 16px; margin: 20px 0;">
-<p style="margin: 0 0 4px 0; font-size: 12px; color: #2980b9; font-weight: bold;">TOP PICK</p>
+<p style="margin: 0 0 4px 0; font-size: 12px; color: #2980b9; font-weight: bold;">TOP PICK (Value: {tp_score}/100)</p>
 <p style="margin: 0; font-size: 16px; font-weight: bold;">{top_pick.get('title', '')}</p>
 <p style="margin: 4px 0 0 0; font-size: 13px; color: #666;">
 Keyword: <strong>{top_pick.get('primary_keyword', '')}</strong> |
@@ -60,12 +59,24 @@ Traffic Potential: {top_pick.get('traffic_potential', '?')}</p></div>"""
         existing_str = f'<br><span style="font-size: 12px; color: #888;">Expands cluster with: {", ".join(existing[:3])}</span>' if existing else ""
         additional_str = f'<br><span style="font-size: 12px; color: #888;">Also targets: {", ".join(additional[:4])}</span>' if additional else ""
 
+        value_score = rec.get("value_score", rec.get("total_score", 0))
+        if value_score >= 75:
+            badge_color = "#27ae60"
+            badge_label = "HIGH VALUE"
+        elif value_score >= 50:
+            badge_color = "#f39c12"
+            badge_label = "MEDIUM VALUE"
+        else:
+            badge_color = "#e74c3c"
+            badge_label = "LOW VALUE"
+        value_badge = f'<span style="background: {badge_color}; color: white; font-size: 11px; padding: 2px 8px; border-radius: 3px; margin-left: 8px;">{badge_label} ({value_score}/100)</span>'
+
         html += f"""
 <div style="border: 1px solid #ddd; border-radius: 6px; padding: 16px; margin: 12px 0;">
 <p style="margin: 0 0 2px 0; font-size: 12px; color: #999; text-transform: uppercase;">{cluster.get('cluster_name', '')}</p>
 <p style="margin: 0; font-size: 16px;">
 <strong style="color: #2980b9; font-size: 20px; margin-right: 8px;">{i}.</strong>
-<strong>{rec.get('title', 'Untitled')}</strong></p>
+<strong>{rec.get('title', 'Untitled')}</strong>{value_badge}</p>
 <p style="margin: 6px 0 0 0; font-size: 13px; color: #555;">
 Keyword: <strong>{rec.get('primary_keyword', '')}</strong> |
 Volume: {rec.get('volume', '?')} | KD: {rec.get('difficulty', '?')} | TP: {rec.get('traffic_potential', '?')}</p>
@@ -75,8 +86,8 @@ Volume: {rec.get('volume', '?')} | KD: {rec.get('difficulty', '?')} | TP: {rec.g
     html += """
 <div style="background: #f9f9f9; padding: 16px; margin-top: 24px; border-radius: 6px;">
 <p style="margin: 0; font-size: 14px; color: #555;">
-<strong>To pick a topic:</strong> Reply to this email with just the number (e.g., "2")
-or the number followed by any notes (e.g., "3 - focus on NEC compliance angle").</p></div>
+<strong>To pick a topic:</strong> Reply with just the number (e.g., "2")
+or the number followed by notes (e.g., "3 - focus on NEC compliance angle").</p></div>
 </body></html>"""
     return html
 
@@ -85,11 +96,13 @@ def _build_suggestions_text(clusters: list, top_pick: dict, scan_date: str) -> s
     lines = [f"Daily Content Opportunities - {scan_date}", "=" * 50, "",
              "Reply with the NUMBER of the topic you'd like me to write.", ""]
     if top_pick and top_pick.get("title"):
-        lines.extend([f"TOP PICK: {top_pick.get('title', '')}",
+        tp_score = top_pick.get("value_score", top_pick.get("total_score", "?"))
+        lines.extend([f"TOP PICK (Value: {tp_score}/100): {top_pick.get('title', '')}",
                        f"  Keyword: {top_pick.get('primary_keyword', '')} | Vol: {top_pick.get('volume', '?')} | KD: {top_pick.get('difficulty', '?')}", ""])
     for i, cluster in enumerate(clusters, 1):
         rec = cluster.get("recommended_topic", {})
-        lines.extend([f"{i}. [{cluster.get('cluster_name', '')}] {rec.get('title', 'Untitled')}",
+        score = rec.get("value_score", rec.get("total_score", "?"))
+        lines.extend([f"{i}. [{cluster.get('cluster_name', '')}] {rec.get('title', 'Untitled')} (Value: {score}/100)",
                        f"   Keyword: {rec.get('primary_keyword', '')} | Vol: {rec.get('volume', '?')} | KD: {rec.get('difficulty', '?')}",
                        f"   {rec.get('rationale', '')}", ""])
     lines.extend(["-" * 50, "Reply with just a number (e.g., '2') to select a topic."])
@@ -127,7 +140,6 @@ def _send_via_smtp(subject: str, html: str, text: str) -> dict:
 
 
 def send_completion_email(article_title: str, article_slug: str, contentful_result: dict) -> dict:
-    """Notify the user that an article has been drafted."""
     entry_id = contentful_result.get("entry_id", "N/A")
     status = contentful_result.get("status", "unknown")
     subject = f"Article Ready for Review: {article_title}"
@@ -149,7 +161,6 @@ The article has been published as a <strong>draft</strong> in Contentful. Log in
 
 
 def poll_for_reply(since_minutes: int = 30) -> Optional[dict]:
-    """Poll IMAP inbox for a reply to the suggestions email."""
     if not IMAP_HOST or not IMAP_USER:
         return None
     try:
