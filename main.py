@@ -4,7 +4,8 @@
 Usage:
     python main.py "topic"               # Run the full pipeline
     python main.py "topic" --verbose      # Verbose output
-    python main.py --suggest              # Show keyword opportunities
+    python main.py --seed                 # Seed memory with existing DWC content (run once)
+    python main.py --suggest              # Show keyword opportunities from memory
     python main.py --scout               # Run competitive scan now
     python main.py --daemon              # Start the daily scheduler
 """
@@ -19,15 +20,21 @@ def main():
     parser = argparse.ArgumentParser(description="DWC Content Pipeline")
     parser.add_argument("topic", nargs="?", help="Topic seed for the content pipeline")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--seed", action="store_true", help="Seed memory with existing DWC content (run once)")
     parser.add_argument("--suggest", action="store_true", help="Show keyword opportunities from memory")
     parser.add_argument("--scout", action="store_true", help="Run competitive scan now")
     parser.add_argument("--daemon", action="store_true", help="Start the daily scheduler")
 
     args = parser.parse_args()
 
-    if not ANTHROPIC_API_KEY:
+    if not ANTHROPIC_API_KEY and not args.seed and not args.suggest:
         print("Error: ANTHROPIC_API_KEY not set. Copy .env.example to .env and add your key.")
         sys.exit(1)
+
+    if args.seed:
+        from memory.seed import seed
+        seed()
+        return
 
     if args.suggest:
         from memory.store import get_published_content, get_cluster_map
