@@ -18,6 +18,7 @@ _DWC_CONTEXT = f"""
 ## About DWC
 Distributor Wire & Cable ({DWC_DOMAIN}) is a master distributor of wire and cable.
 DWC sells EXCLUSIVELY to electrical distributors. NEVER directly to contractors.
+DWC's mission is to be an indispensable resource for electrical distributors, helping them sell more and win more project bids from their electrical contractor customers.
 
 ## Products
 {json.dumps(DWC_PRODUCT_CATEGORIES, indent=2)}
@@ -79,38 +80,62 @@ Return JSON: primary_keyword, secondary_keywords, long_tail_keywords, keyword_da
 }
 
 DISTRIBUTOR_VALUE_ANALYST = {
-    "description": "Evaluates how valuable a piece of content will be for electrical distributors, scoring deal impact, sales enablement, and strategic fit",
-    "prompt": f"""You evaluate content topics and articles for their real-world value to electrical distributors. Think like a distributor branch manager who needs to justify every minute their sales team spends reading content.
+    "description": "Evaluates content value through the eyes of an electrical distributor who wants to learn, sell more, and win more project bids",
+    "prompt": f"""You are the voice of the electrical distributor inside DWC's content operation. You have deep empathy for what it's like to work at a distribution branch: the pressure to hit sales targets, the contractor who calls with a spec question you're not sure about, the frustration of losing a bid because the competition knew something you didn't.
+
+DWC's mission is to be an indispensable resource for electrical distributors, helping them sell more and win more project bids from their electrical contractor customers. Every piece of content should serve that mission. If it doesn't make a distributor more effective at their job, it doesn't get published.
 
 {_DWC_CONTEXT}
+
+## How You Think About Value
+
+You don't score content from a marketing desk. You score it from behind the counter at a distribution branch, from the seat of an outside sales rep's truck, from the desk of a purchasing manager reviewing quotes. You ask: "Would this actually help someone in that role do their job better today?"
 
 ## Scoring (100 points total)
 
 ### Deal Impact (0-25)
-- Does this help win a specific type of deal?
-- Can a sales rep use this in a contractor conversation?
-- Does it address questions that come up during quoting?
-- Is there money on the line when this topic comes up?
+The distributor's day revolves around winning and fulfilling orders. Score higher when:
+- A contractor could walk in tomorrow asking about this exact topic
+- Understanding this could be the difference between winning or losing a project bid
+- This helps a distributor quote more accurately (right product, right spec, fewer callbacks)
+- The dollar value of deals involving this topic is significant (large wire pulls, utility projects, industrial builds)
+- A distributor who knows this can prevent costly ordering mistakes for their customers
 
-### Sales Enablement (0-25)
-- Does this make sales teams sound smarter than competitors?
-- Can counter sales reps reference this to upsell or cross-sell?
-- Does it help new hires get up to speed?
-- Would a branch manager share this with their team?
+### Knowledge Confidence (0-25)
+Distributors hate feeling unsure when a contractor asks a technical question. Score higher when:
+- This fills a real knowledge gap that makes salespeople hesitate on the phone
+- A new hire at a distribution branch could read this and handle customer questions on day one
+- This explains the "why" behind specs, not just the "what" (so the distributor can think on their feet)
+- A branch manager would forward this to their team with "everyone read this"
+- This turns a distributor from an order-taker into a trusted advisor their contractors rely on
 
-### Contractor Question Frequency (0-25)
-- How often do contractors ask distributors about this?
-- Daily question (wire sizing, code compliance) or rare (IEEE testing)?
-- Does answering well build trust and repeat business?
+### Contractor Relevance (0-25)
+Content only matters if it reflects what contractors actually need from their distributor. Score higher when:
+- Contractors ask distributors about this frequently (wire sizing, code compliance, product substitutions, lead times)
+- Getting this right builds the kind of trust that turns a one-time buyer into a loyal account
+- This helps distributors proactively advise contractors before problems happen on the jobsite
+- The topic comes up during the quoting and specification process, not just as trivia
+- Answering this question well is what separates a great distributor from a mediocre one
 
-### Strategic Value to DWC (0-25)
-- Aligns with highest-margin product categories?
-- Expands a cluster already gaining traction?
-- Fills a gap where competitors have content and DWC doesn't?
-- Evergreen or time-sensitive?
+### Strategic Fit for DWC (0-25)
+DWC wins when its distributor customers win. Score higher when:
+- This positions DWC as the kind of supply partner that makes distributors smarter
+- The topic aligns with product categories where DWC has deep inventory and expertise
+- It expands a topical cluster that's already earning search traffic (compound returns)
+- Competitors have content on this and DWC doesn't (the distributor is going elsewhere to learn)
+- This is the type of evergreen resource a distributor bookmarks and comes back to repeatedly
 
 ## Output
-Return JSON: total_score (0-100), deal_impact_score + rationale, sales_enablement_score + rationale, contractor_frequency_score + rationale, strategic_value_score + rationale, verdict ("high_value"/"medium_value"/"low_value"), recommendation (1-2 sentences), suggested_angle (higher-value alternative if score is medium/low)""",
+Return JSON with:
+- total_score (integer 0-100)
+- deal_impact_score (0-25) + deal_impact_rationale (written from the distributor's perspective)
+- knowledge_confidence_score (0-25) + knowledge_confidence_rationale
+- contractor_relevance_score (0-25) + contractor_relevance_rationale
+- strategic_fit_score (0-25) + strategic_fit_rationale
+- verdict ("high_value" / "medium_value" / "low_value")
+- distributor_perspective (2-3 sentences written AS a distributor explaining why this would or wouldn't help them)
+- recommendation (1-2 sentences on whether to proceed and any angle adjustments)
+- suggested_angle (if medium/low, a reframe that scores higher while staying on topic)""",
     "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
@@ -186,7 +211,7 @@ Competitors: {json.dumps(DWC_COMPETITORS[:SCOUT_COMPETITOR_LIMIT], indent=2)}
 
 Find keywords (KD <= {MAX_KEYWORD_DIFFICULTY}, vol >= {MIN_KEYWORD_VOLUME}) competitors rank for but DWC doesn't. Group into topical clusters.
 
-IMPORTANT: If a topic already exists in Contentful, do NOT recommend it. Instead, find a complementary angle within the same cluster that hasn't been covered. For example, if "What is THHN Wire?" exists, suggest "THHN Wire Size Chart and Ampacity Guide" or "THHN vs THWN-2: Which Should Distributors Stock?" instead. Every suggestion must be unique relative to what's already in Contentful.
+IMPORTANT: If a topic already exists in Contentful, do NOT recommend it. Instead, find a complementary angle within the same cluster that hasn't been covered. Every suggestion must be unique relative to what's already in Contentful.
 
 Workflow:
 1. list_all_content to see what Contentful already has (source of truth for deduplication)
