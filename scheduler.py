@@ -1,4 +1,4 @@
-"""Daily scheduler - competitive scout + value analysis + email workflow.
+"""Marcus daily scheduler - competitive scout + email-driven content workflow.
 
 Uses Agent SDK for the scout and value analyst, then emails scored suggestions.
 """
@@ -48,7 +48,7 @@ def save_state(state: dict) -> None:
 
 
 async def run_scout_async() -> dict:
-    console.print("\n[bold blue]Running competitive scan + value analysis...[/bold blue]")
+    console.print("\n[bold blue]Marcus: Running competitive scan + value analysis...[/bold blue]")
 
     options = ClaudeAgentOptions(
         mcp_servers={"ahrefs": ahrefs_server, "contentful": contentful_server, "memory": memory_server},
@@ -100,7 +100,7 @@ async def run_scout_async() -> dict:
 def run_daily_scout() -> dict:
     report = asyncio.run(run_scout_async())
     if EMAIL_TO:
-        console.print(f"\n  Emailing to {EMAIL_TO}...")
+        console.print(f"\n  Marcus: Emailing suggestions to {EMAIL_TO}...")
         result = send_suggestions_email(report)
         console.print(f"  Email: {result.get('status', 'unknown')}")
     state = load_state()
@@ -132,12 +132,12 @@ def check_for_reply() -> bool:
     if notes:
         topic = f"{topic} ({notes})"
 
-    console.print(f"\n[bold green]Reply #{selection}:[/bold green] {topic}")
+    console.print(f"\n[bold green]Marcus: Got it! #{selection}:[/bold green] {topic}")
     result = run_pipeline(topic)
 
     if EMAIL_TO:
         send_completion_email(result.get("title", topic), result.get("slug", ""), result.get("contentful", {}))
-        console.print(f"  Completion email sent to {EMAIL_TO}")
+        console.print(f"  Marcus: Completion email sent to {EMAIL_TO}")
 
     state["pending_suggestions"] = None
     state["last_pipeline_run"] = datetime.now().isoformat()
@@ -157,13 +157,13 @@ def _seconds_until(hour: int, minute: int) -> int:
 def run_scout_loop(stop_event: threading.Event) -> None:
     while not stop_event.is_set():
         wait = _seconds_until(SCOUT_SCHEDULE_HOUR, SCOUT_SCHEDULE_MINUTE)
-        console.print(f"[dim]Next scan: {SCOUT_SCHEDULE_HOUR:02d}:{SCOUT_SCHEDULE_MINUTE:02d} ({wait // 3600}h {(wait % 3600) // 60}m)[/dim]")
+        console.print(f"[dim]Marcus: Next scan at {SCOUT_SCHEDULE_HOUR:02d}:{SCOUT_SCHEDULE_MINUTE:02d} ({wait // 3600}h {(wait % 3600) // 60}m)[/dim]")
         if stop_event.wait(timeout=wait):
             break
         try:
             run_daily_scout()
         except Exception as e:
-            console.print(f"[red]Scout error: {e}[/red]")
+            console.print(f"[red]Marcus: Scout error: {e}[/red]")
 
 
 def run_reply_loop(stop_event: threading.Event) -> None:
@@ -171,15 +171,15 @@ def run_reply_loop(stop_event: threading.Event) -> None:
     while not stop_event.is_set():
         try:
             if check_for_reply():
-                console.print("[green]Pipeline complete.[/green]")
+                console.print("[green]Marcus: Pipeline complete.[/green]")
         except Exception as e:
-            console.print(f"[red]Reply error: {e}[/red]")
+            console.print(f"[red]Marcus: Reply error: {e}[/red]")
         if stop_event.wait(timeout=interval):
             break
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DWC Content Agent Scheduler")
+    parser = argparse.ArgumentParser(description="Marcus - DWC Content Agent")
     parser.add_argument("--scout-now", action="store_true")
     parser.add_argument("--poll-now", action="store_true")
     args = parser.parse_args()
@@ -189,17 +189,17 @@ def main():
         return
     if args.poll_now:
         if not check_for_reply():
-            console.print("No reply found.")
+            console.print("Marcus: No reply found.")
         return
 
-    console.print("[bold]DWC Content Agent Scheduler[/bold]")
+    console.print("[bold]Marcus - DWC Content Agent[/bold]")
     console.print(f"  Scout: daily at {SCOUT_SCHEDULE_HOUR:02d}:{SCOUT_SCHEDULE_MINUTE:02d}")
     console.print(f"  Reply poll: every {REPLY_POLL_INTERVAL_MINUTES}m")
     console.print(f"  Email: {EMAIL_TO or '(not set)'}")
     console.print("  Ctrl+C to stop.\n")
 
     stop = threading.Event()
-    signal.signal(signal.SIGINT, lambda *_: (console.print("\n[yellow]Stopping...[/yellow]"), stop.set()))
+    signal.signal(signal.SIGINT, lambda *_: (console.print("\n[yellow]Marcus: Shutting down...[/yellow]"), stop.set()))
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
 
     for t in [threading.Thread(target=run_scout_loop, args=(stop,), daemon=True),
