@@ -15,14 +15,14 @@ CONTENTFUL_CONTENT_TYPE_ID = os.getenv("CONTENTFUL_CONTENT_TYPE_ID", "blogPost")
 
 # Email configuration (SendGrid recommended, SMTP fallback)
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
-EMAIL_FROM = os.getenv("EMAIL_FROM", "content-agent@distributorwire.com")
-EMAIL_TO = os.getenv("EMAIL_TO", "")  # Your email address
-IMAP_HOST = os.getenv("IMAP_HOST", "")  # For polling replies (e.g., imap.gmail.com)
+EMAIL_FROM = os.getenv("EMAIL_FROM", "marcus@distributorwire.com")
+EMAIL_TO = os.getenv("EMAIL_TO", "")
+IMAP_HOST = os.getenv("IMAP_HOST", "")
 IMAP_USER = os.getenv("IMAP_USER", "")
 IMAP_PASSWORD = os.getenv("IMAP_PASSWORD", "")
 
 # Scheduler configuration
-SCOUT_SCHEDULE_HOUR = int(os.getenv("SCOUT_SCHEDULE_HOUR", "7"))  # 7 AM daily
+SCOUT_SCHEDULE_HOUR = int(os.getenv("SCOUT_SCHEDULE_HOUR", "7"))
 SCOUT_SCHEDULE_MINUTE = int(os.getenv("SCOUT_SCHEDULE_MINUTE", "0"))
 REPLY_POLL_INTERVAL_MINUTES = int(os.getenv("REPLY_POLL_INTERVAL_MINUTES", "5"))
 
