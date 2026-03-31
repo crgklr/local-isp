@@ -13,6 +13,25 @@ CONTENTFUL_MANAGEMENT_TOKEN = os.getenv("CONTENTFUL_MANAGEMENT_TOKEN", "")
 CONTENTFUL_ENVIRONMENT = os.getenv("CONTENTFUL_ENVIRONMENT", "master")
 CONTENTFUL_CONTENT_TYPE_ID = os.getenv("CONTENTFUL_CONTENT_TYPE_ID", "blogPost")
 
+# Email configuration (SendGrid recommended, SMTP fallback)
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "content-agent@distributorwire.com")
+EMAIL_TO = os.getenv("EMAIL_TO", "")  # Your email address
+IMAP_HOST = os.getenv("IMAP_HOST", "")  # For polling replies (e.g., imap.gmail.com)
+IMAP_USER = os.getenv("IMAP_USER", "")
+IMAP_PASSWORD = os.getenv("IMAP_PASSWORD", "")
+
+# Scheduler configuration
+SCOUT_SCHEDULE_HOUR = int(os.getenv("SCOUT_SCHEDULE_HOUR", "7"))  # 7 AM daily
+SCOUT_SCHEDULE_MINUTE = int(os.getenv("SCOUT_SCHEDULE_MINUTE", "0"))
+REPLY_POLL_INTERVAL_MINUTES = int(os.getenv("REPLY_POLL_INTERVAL_MINUTES", "5"))
+
+# Scout thresholds
+MAX_KEYWORD_DIFFICULTY = int(os.getenv("MAX_KEYWORD_DIFFICULTY", "30"))
+MIN_KEYWORD_VOLUME = int(os.getenv("MIN_KEYWORD_VOLUME", "50"))
+SCOUT_COMPETITOR_LIMIT = int(os.getenv("SCOUT_COMPETITOR_LIMIT", "5"))
+SUGGESTIONS_PER_EMAIL = int(os.getenv("SUGGESTIONS_PER_EMAIL", "5"))
+
 # Model configuration
 MODEL = "claude-sonnet-4-6"
 MODEL_RESEARCH = "claude-sonnet-4-6"
@@ -20,34 +39,13 @@ MODEL_WRITER = "claude-sonnet-4-6"
 MAX_TOKENS = 8192
 MAX_TOKENS_WRITER = 16384
 
-# DWC domain knowledge baked in from Ahrefs research
 DWC_DOMAIN = "distributorwire.com"
 
 DWC_PRODUCT_CATEGORIES = {
-    "residential": [
-        "URD cable",
-        "SER cable",
-        "SEU cable",
-        "Building wire (NM-B / Romex type)",
-    ],
-    "commercial": [
-        "Commercial building wire (THHN/THWN-2)",
-        "Machine tool wire (MTW)",
-        "XHHW-2 wire",
-    ],
-    "industrial": [
-        "Tray cable (VNTC, TC-ER)",
-        "Instrumentation tray cable",
-        "Industrial power cable",
-        "Control cable",
-    ],
-    "utility": [
-        "Medium voltage cable (MV-105)",
-        "ACSR conductor",
-        "Utility tray cable",
-        "Bare copper and aluminum conductor",
-        "Underground distribution cable",
-    ],
+    "residential": ["URD cable", "SER cable", "SEU cable", "Building wire (NM-B / Romex type)"],
+    "commercial": ["Commercial building wire (THHN/THWN-2)", "Machine tool wire (MTW)", "XHHW-2 wire"],
+    "industrial": ["Tray cable (VNTC, TC-ER)", "Instrumentation tray cable", "Industrial power cable", "Control cable"],
+    "utility": ["Medium voltage cable (MV-105)", "ACSR conductor", "Utility tray cable", "Bare copper and aluminum conductor", "Underground distribution cable"],
 }
 
 DWC_SERVICES = [
@@ -109,15 +107,8 @@ KEYWORD_OPPORTUNITIES = [
     {"keyword": "romex cable", "volume": 2100, "difficulty": 0, "tp": 8400},
     {"keyword": "thhn wire size chart", "volume": 200, "difficulty": 10, "tp": 50000},
     {"keyword": "ampacity aluminum wire", "volume": 150, "difficulty": 3, "tp": 48000},
-    {"keyword": "medium voltage cable", "volume": 150, "difficulty": null, "tp": null},
-    {"keyword": "tray cable types", "volume": 90, "difficulty": null, "tp": null},
-    {"keyword": "instrumentation tray cable", "volume": 150, "difficulty": null, "tp": null},
-    {"keyword": "machine tool wire", "volume": 500, "difficulty": null, "tp": null},
-    {"keyword": "epr cable", "volume": 250, "difficulty": null, "tp": null},
-    {"keyword": "cable jacket", "volume": 350, "difficulty": null, "tp": null},
 ]
 
-# Target audience definition
 TARGET_AUDIENCE = """
 Electrical distributors (counter sales, inside sales, outside sales reps, branch managers,
 purchasing managers, and owners) who sell wire & cable products to electrical contractors.
