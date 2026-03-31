@@ -1,91 +1,75 @@
 #!/usr/bin/env python3
-"""DWC Content Pipeline - Agent swarm for wire & cable content strategy.
+"""DWC Content Pipeline - Agent SDK powered content swarm.
 
 Usage:
-    python main.py "topic seed phrase"
-    python main.py "topic seed phrase" --verbose
-    python main.py --suggest
-
-Examples:
-    python main.py "THHN vs XHHW wire: which should distributors stock?"
-    python main.py "Understanding medium voltage cable for utility applications"
-    python main.py "Tray cable types and applications for industrial projects"
-    python main.py --suggest
+    python main.py "topic"               # Run the full pipeline
+    python main.py "topic" --verbose      # Verbose output
+    python main.py --suggest              # Show keyword opportunities
+    python main.py --scout               # Run competitive scan now
+    python main.py --daemon              # Start the daily scheduler
 """
 
 import argparse
-import json
 import sys
 
-from config.settings import ANTHROPIC_API_KEY, KEYWORD_OPPORTUNITIES, DWC_EXISTING_CONTENT
-
-
-def suggest_topics() -> list[str]:
-    """Suggest content topics based on keyword gaps and opportunities."""
-    existing_keywords = {c["keyword"].lower() for c in DWC_EXISTING_CONTENT}
-
-    suggestions = []
-    for kw in KEYWORD_OPPORTUNITIES:
-        if kw["keyword"].lower() not in existing_keywords:
-            vol = kw.get("volume", 0) or 0
-            diff = kw.get("difficulty")
-            diff_str = str(diff) if diff is not None else "?"
-            suggestions.append({
-                "keyword": kw["keyword"],
-                "volume": vol,
-                "difficulty": diff_str,
-            })
-
-    suggestions.sort(key=lambda x: x["volume"], reverse=True)
-    return suggestions
+from config.settings import ANTHROPIC_API_KEY
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="DWC Content Pipeline - Wire & Cable Content Agent Swarm"
-    )
-    parser.add_argument(
-        "topic",
-        nargs="?",
-        help="The topic seed for the content pipeline",
-    )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Show detailed output from each agent",
-    )
-    parser.add_argument(
-        "--suggest",
-        action="store_true",
-        help="Show suggested topics based on keyword opportunities",
-    )
+    parser = argparse.ArgumentParser(description="DWC Content Pipeline")
+    parser.add_argument("topic", nargs="?", help="Topic seed for the content pipeline")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--suggest", action="store_true", help="Show keyword opportunities from memory")
+    parser.add_argument("--scout", action="store_true", help="Run competitive scan now")
+    parser.add_argument("--daemon", action="store_true", help="Start the daily scheduler")
 
     args = parser.parse_args()
 
+    if not ANTHROPIC_API_KEY:
+        print("Error: ANTHROPIC_API_KEY not set. Copy .env.example to .env and add your key.")
+        sys.exit(1)
+
     if args.suggest:
-        suggestions = suggest_topics()
-        print("\nSuggested Content Topics (based on keyword gaps):\n")
-        print(f"{'Keyword':<40} {'Volume':>8} {'Difficulty':>12}")
-        print("-" * 62)
-        for s in suggestions:
-            print(f"{s['keyword']:<40} {s['volume']:>8} {s['difficulty']:>12}")
-        print(f"\nTotal opportunities: {len(suggestions)}")
-        print("\nRun with a topic to start the pipeline:")
-        print('  python main.py "your topic here"')
+        from memory.store import get_published_content, get_cluster_map
+        published = get_published_content()
+        clusters = get_cluster_map()
+
+        print(f"\nPublished articles: {len(published)}")
+        for p in published:
+            print(f"  - {p['title']} ({p['primary_keyword']})")
+
+        print(f"\nTopical clusters: {len(clusters)}")
+        for c in clusters:
+            opportunities = [k for k in c.get("keywords", []) if k.get("status") == "opportunity"]
+            published_kw = [k for k in c.get("keywords", []) if k.get("status") == "published"]
+            print(f"  {c['name']}: {len(published_kw)} published, {len(opportunities)} opportunities")
+            for opp in opportunities[:3]:
+                print(f"    - {opp['keyword']} (vol: {opp.get('volume', '?')}, KD: {opp.get('difficulty', '?')})")
+        return
+
+    if args.scout:
+        from scheduler import run_daily_scout
+        run_daily_scout()
+        return
+
+    if args.daemon:
+        from scheduler import main as scheduler_main
+        scheduler_main()
         return
 
     if not args.topic:
         parser.print_help()
         sys.exit(1)
 
-    if not ANTHROPIC_API_KEY:
-        print("Error: ANTHROPIC_API_KEY not set. Copy .env.example to .env and add your key.")
-        sys.exit(1)
-
     from pipeline import run_pipeline
     result = run_pipeline(args.topic, verbose=args.verbose)
 
-    sys.exit(0)
+    if result.get("status") == "success":
+        print("\nPipeline complete.")
+    else:
+        print(f"\nPipeline finished with status: {result.get('status')}")
+        if result.get("error"):
+            print(f"Error: {result['error']}")
 
 
 if __name__ == "__main__":
