@@ -3,6 +3,8 @@
 Uses query() with subagent delegation for the full content pipeline.
 Includes quality gates and feedback loops: the orchestrator sends work
 back to agents for revision when quality checks fail.
+
+Orchestrator runs on Opus 4.6 for best judgment on quality gates.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from agents.definitions import (
     WRITER, FACT_CHECKER, EDITOR_IN_CHIEF, CANARY,
     DISTRIBUTOR_VALUE_ANALYST,
 )
+from config.settings import MODEL_ORCHESTRATOR
 from tools.ahrefs_tools import ahrefs_server
 from tools.contentful_tools import contentful_server
 from tools.memory_tools import memory_server
@@ -30,6 +33,7 @@ console = Console()
 
 def _build_options() -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
+        model=MODEL_ORCHESTRATOR,
         mcp_servers={"ahrefs": ahrefs_server, "contentful": contentful_server, "memory": memory_server},
         allowed_tools=["Agent"],
         agents={
