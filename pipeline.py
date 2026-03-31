@@ -51,7 +51,7 @@ async def run_pipeline_async(topic: str, verbose: bool = False) -> dict:
 TOPIC: {topic}
 
 ## Step 1: Domain Research
-Use domain-researcher agent. Pass the topic. Get a research brief covering technical details, distributor pain points, sales angles, DWC product relevance.
+Use domain-researcher agent. Pass the topic. It will check Contentful for existing content (source of truth) and research the topic. Get a research brief covering technical details, distributor pain points, sales angles, DWC product relevance. If this exact topic already exists in Contentful, STOP and report that it's already covered.
 
 ## Step 2: SEO/GEO Research
 Use seo-researcher agent. Pass the topic AND domain brief. It will query Ahrefs live for keywords, SERPs, and cannibalization checks.
@@ -72,11 +72,11 @@ Use fact-checker agent. Pass the article and content brief. Note if accuracy < 8
 Use editor-in-chief agent. Pass the fact-checked article.
 
 ## Step 8: Publish
-Use canary agent. Pass the final article (title, slug, body_markdown, meta_description, word_count).
+Use canary agent. Pass the final article (title, slug, body_markdown, meta_description, word_count). It will check the slug doesn't already exist in Contentful before publishing.
 
 Pass FULL output from each agent to the next. Report final title, slug, word count, and Contentful status."""
 
-    result_data = {{"topic": topic, "status": "unknown"}}
+    result_data = {"topic": topic, "status": "unknown"}
 
     async for message in query(prompt=orchestrator_prompt, options=_build_options()):
         if isinstance(message, ResultMessage):
@@ -91,19 +91,19 @@ Pass FULL output from each agent to the next. Report final title, slug, word cou
         elif verbose and hasattr(message, "message"):
             for block in message.message.content:
                 if hasattr(block, "text") and block.text:
-                    console.print(f"[dim]{{block.text[:200]}}[/dim]")
+                    console.print(f"[dim]{block.text[:200]}[/dim]")
                 elif block.type == "tool_use":
-                    console.print(f"  [cyan]> {{block.name}}[/cyan]")
+                    console.print(f"  [cyan]> {block.name}[/cyan]")
 
     output_dir = Path("output")
     output_dir.mkdir(exist_ok=True)
-    state_path = output_dir / f"pipeline_{{topic[:40].replace(' ', '_')}}.json"
+    state_path = output_dir / f"pipeline_{topic[:40].replace(' ', '_')}.json"
     with open(state_path, "w") as f:
         json.dump(result_data, f, indent=2, default=str)
 
-    console.print(f"\\n[dim]State saved: {{state_path}}[/dim]")
+    console.print(f"\n[dim]State saved: {state_path}[/dim]")
     if result_data.get("cost_usd"):
-        console.print(f"[dim]Cost: ${{result_data['cost_usd']:.4f}}[/dim]")
+        console.print(f"[dim]Cost: ${result_data['cost_usd']:.4f}[/dim]")
 
     return result_data
 
