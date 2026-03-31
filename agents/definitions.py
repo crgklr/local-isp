@@ -35,9 +35,13 @@ DWC sells EXCLUSIVELY to electrical distributors. NEVER directly to contractors.
 _CONTENT_CHECK = """
 ## Existing Content Check (REQUIRED)
 Before doing anything else, call list_all_content to get every article currently in Contentful.
-This is the source of truth for what topics DWC has already covered. Do NOT suggest or write
-about topics that already have an entry in Contentful (whether draft or published).
-If you need to see the full text of an existing article, use get_entry_content with its ID.
+This is the source of truth for what topics DWC has already covered. If the requested topic
+already has an entry in Contentful, do NOT stop. Instead, read the existing article with
+get_entry_content and identify a complementary angle that hasn't been covered yet.
+For example, if "What is THHN Wire?" exists and the topic is about THHN, pivot to
+"THHN Wire Size Chart and Ampacity Guide" or "THHN vs THWN-2: What Distributors Need to Know".
+Note in your research brief what already exists and what your refined angle covers that the
+existing piece doesn't.
 """
 
 DOMAIN_RESEARCHER = {
@@ -72,6 +76,42 @@ Check serp_features for ai_overview, snippet, question for GEO recommendations.
 
 Return JSON: primary_keyword, secondary_keywords, long_tail_keywords, keyword_data (array), search_intent, serp_features, competitor_urls, content_gap_opportunities, recommended_word_count, geo_optimization_notes, ahrefs_data_summary""",
     "tools": ["mcp__ahrefs__*", "mcp__contentful__*", "mcp__memory__*"],
+}
+
+DISTRIBUTOR_VALUE_ANALYST = {
+    "description": "Evaluates how valuable a piece of content will be for electrical distributors, scoring deal impact, sales enablement, and strategic fit",
+    "prompt": f"""You evaluate content topics and articles for their real-world value to electrical distributors. Think like a distributor branch manager who needs to justify every minute their sales team spends reading content.
+
+{_DWC_CONTEXT}
+
+## Scoring (100 points total)
+
+### Deal Impact (0-25)
+- Does this help win a specific type of deal?
+- Can a sales rep use this in a contractor conversation?
+- Does it address questions that come up during quoting?
+- Is there money on the line when this topic comes up?
+
+### Sales Enablement (0-25)
+- Does this make sales teams sound smarter than competitors?
+- Can counter sales reps reference this to upsell or cross-sell?
+- Does it help new hires get up to speed?
+- Would a branch manager share this with their team?
+
+### Contractor Question Frequency (0-25)
+- How often do contractors ask distributors about this?
+- Daily question (wire sizing, code compliance) or rare (IEEE testing)?
+- Does answering well build trust and repeat business?
+
+### Strategic Value to DWC (0-25)
+- Aligns with highest-margin product categories?
+- Expands a cluster already gaining traction?
+- Fills a gap where competitors have content and DWC doesn't?
+- Evergreen or time-sensitive?
+
+## Output
+Return JSON: total_score (0-100), deal_impact_score + rationale, sales_enablement_score + rationale, contractor_frequency_score + rationale, strategic_value_score + rationale, verdict ("high_value"/"medium_value"/"low_value"), recommendation (1-2 sentences), suggested_angle (higher-value alternative if score is medium/low)""",
+    "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
 OUTLINE_ARCHITECT = {
@@ -146,8 +186,10 @@ Competitors: {json.dumps(DWC_COMPETITORS[:SCOUT_COMPETITOR_LIMIT], indent=2)}
 
 Find keywords (KD <= {MAX_KEYWORD_DIFFICULTY}, vol >= {MIN_KEYWORD_VOLUME}) competitors rank for but DWC doesn't. Group into topical clusters.
 
+IMPORTANT: If a topic already exists in Contentful, do NOT recommend it. Instead, find a complementary angle within the same cluster that hasn't been covered. For example, if "What is THHN Wire?" exists, suggest "THHN Wire Size Chart and Ampacity Guide" or "THHN vs THWN-2: Which Should Distributors Stock?" instead. Every suggestion must be unique relative to what's already in Contentful.
+
 Workflow:
-1. list_all_content to see what Contentful already has (source of truth)
+1. list_all_content to see what Contentful already has (source of truth for deduplication)
 2. get_cluster_map for current cluster strategy
 3. domain_metrics + organic_keywords on distributorwire.com
 4. top_pages + organic_keywords on 2-3 competitors
