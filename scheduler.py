@@ -1,11 +1,6 @@
-"""Daily scheduler - competitive scout + email-driven content workflow.
+"""Daily scheduler - competitive scout + value analysis + email workflow.
 
-Uses Agent SDK for the scout agent and pipeline execution.
-
-Usage:
-    python scheduler.py              # Run both loops
-    python scheduler.py --scout-now  # Scout scan immediately
-    python scheduler.py --poll-now   # Check for replies immediately
+Uses Agent SDK for the scout and value analyst, then emails scored suggestions.
 """
 
 from __future__ import annotations
@@ -22,8 +17,9 @@ from rich.console import Console
 
 from claude_agent_sdk import query, ClaudeAgentOptions, AgentDefinition, ResultMessage
 
-from agents.definitions import COMPETITIVE_SCOUT
+from agents.definitions import COMPETITIVE_SCOUT, DISTRIBUTOR_VALUE_ANALYST
 from tools.ahrefs_tools import ahrefs_server
+from tools.contentful_tools import contentful_server
 from tools.memory_tools import memory_server
 from integrations.email_service import (
     send_suggestions_email, send_completion_email, poll_for_reply,
@@ -52,18 +48,25 @@ def save_state(state: dict) -> None:
 
 
 async def run_scout_async() -> dict:
-    console.print("\n[bold blue]Running competitive scan via Agent SDK...[/bold blue]")
+    console.print("\n[bold blue]Running competitive scan + value analysis...[/bold blue]")
 
     options = ClaudeAgentOptions(
-        mcp_servers={"ahrefs": ahrefs_server, "memory": memory_server},
+        mcp_servers={"ahrefs": ahrefs_server, "contentful": contentful_server, "memory": memory_server},
         allowed_tools=["Agent"],
-        agents={"competitive-scout": AgentDefinition(**COMPETITIVE_SCOUT)},
-        max_turns=30,
+        agents={
+            "competitive-scout": AgentDefinition(**COMPETITIVE_SCOUT),
+            "value-analyst": AgentDefinition(**DISTRIBUTOR_VALUE_ANALYST),
+        },
+        max_turns=40,
     )
 
-    prompt = f"""Use the competitive-scout agent to run a full scan for {datetime.now().strftime('%Y-%m-%d')}.
-The scout should check DWC's keywords, scan competitors for gaps, find low-hanging fruit,
-group into clusters, and update memory with results. Return the report as JSON."""
+    prompt = f"""Run the daily content opportunity scan for {datetime.now().strftime('%Y-%m-%d')}:
+
+1. Use competitive-scout agent to scan the landscape, find keyword gaps, and cluster opportunities.
+2. For each recommended topic the scout returns, use value-analyst agent to score its value to electrical distributors.
+3. Only include topics that score 50+ in the final report. If a topic scores below 50, use the value analyst's suggested_angle to replace it with a higher-value alternative.
+4. Sort final suggestions by value score (highest first).
+5. Return the full report as JSON with value_score added to each recommended_topic."""
 
     report = {}
     async for message in query(prompt=prompt, options=options):
@@ -88,7 +91,8 @@ group into clusters, and update memory with results. Return the report as JSON."
     console.print(f"  Clusters: {len(clusters)}")
     for i, c in enumerate(clusters, 1):
         rec = c.get("recommended_topic", {})
-        console.print(f"    {i}. [{c.get('cluster_name', '?')}] {rec.get('title', '?')}")
+        score = rec.get("value_score", rec.get("total_score", "?"))
+        console.print(f"    {i}. [{c.get('cluster_name', '?')}] {rec.get('title', '?')} (value: {score}/100)")
 
     return report
 
