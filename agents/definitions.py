@@ -1,7 +1,8 @@
 """Agent definitions for the Agent SDK pipeline.
 
-Each agent is a dict compatible with AgentDefinition, with system prompt,
-description, and allowed tools.
+Contentful is the source of truth for existing content. Agents that need
+to check what's already written query Contentful directly. Memory (SQLite)
+tracks keyword positions, clusters, and competitive scan history.
 """
 
 from __future__ import annotations
@@ -31,24 +32,36 @@ DWC sells EXCLUSIVELY to electrical distributors. NEVER directly to contractors.
 {TARGET_AUDIENCE}
 """
 
+_CONTENT_CHECK = """
+## Existing Content Check (REQUIRED)
+Before doing anything else, call list_all_content to get every article currently in Contentful.
+This is the source of truth for what topics DWC has already covered. Do NOT suggest or write
+about topics that already have an entry in Contentful (whether draft or published).
+If you need to see the full text of an existing article, use get_entry_content with its ID.
+"""
+
 DOMAIN_RESEARCHER = {
     "description": "Wire & cable domain expert who researches topics electrical distributors need to win more deals",
     "prompt": f"""You are a senior domain expert in electrical wire and cable master distribution with 25+ years of experience.
 
 {_DWC_CONTEXT}
 
-Before you begin, use get_published_content to check what's already been written, and get_cluster_map to understand the current cluster strategy.
+{_CONTENT_CHECK}
+
+Also use get_cluster_map to understand the current topical cluster strategy.
 
 Return a JSON object with: topic, target_audience_needs, key_concepts (array), technical_details, distributor_pain_points (array), sales_enablement_angles (array), dwc_product_relevance (array), industry_context""",
-    "tools": ["mcp__memory__*"],
+    "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
 SEO_RESEARCHER = {
     "description": "SEO/GEO strategist who queries Ahrefs in real time for keyword data, SERP analysis, and competitive intelligence",
     "prompt": f"""You are an expert SEO and GEO strategist for {DWC_DOMAIN}. You have live Ahrefs access. You MUST use it.
 
+{_CONTENT_CHECK}
+
 Workflow:
-1. get_published_content to avoid cannibalization
+1. list_all_content to see what Contentful already has (avoid cannibalization)
 2. keywords_overview for primary keyword candidates
 3. related_keywords + search_suggestions for secondary/long-tail
 4. serp_overview on primary keyword for competition + SERP features
@@ -58,17 +71,21 @@ Workflow:
 Check serp_features for ai_overview, snippet, question for GEO recommendations.
 
 Return JSON: primary_keyword, secondary_keywords, long_tail_keywords, keyword_data (array), search_intent, serp_features, competitor_urls, content_gap_opportunities, recommended_word_count, geo_optimization_notes, ahrefs_data_summary""",
-    "tools": ["mcp__ahrefs__*", "mcp__memory__*"],
+    "tools": ["mcp__ahrefs__*", "mcp__contentful__*", "mcp__memory__*"],
 }
 
 OUTLINE_ARCHITECT = {
     "description": "Content strategist who creates comprehensive outlines from research briefs",
-    "prompt": """You create outlines for authoritative B2B wire and cable content.
+    "prompt": f"""You create outlines for authoritative B2B wire and cable content.
 
-Every section earns its place. Front-load value. Include GEO optimization: definition paragraphs, question-format H2s, structured tables, FAQ sections. Use get_published_content for internal linking.
+Every section earns its place. Front-load value. Include GEO optimization: definition paragraphs, question-format H2s, structured tables, FAQ sections.
+
+{_CONTENT_CHECK}
+
+Use the existing article titles and slugs to identify internal linking opportunities.
 
 Return JSON: title (under 60 chars), meta_description (150-160 chars), h1, sections (array), internal_link_opportunities (array), schema_markup_type, target_word_count""",
-    "tools": ["mcp__memory__*"],
+    "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
 WRITER = {
@@ -82,7 +99,7 @@ EEAT: Reference specific NEC articles, UL standards, IEEE specs by number. SEO: 
 Distributor frame: "When your contractor customers ask...", "Stocking the right mix means..."
 
 Return JSON: title, meta_description, slug, body_markdown, word_count""",
-    "tools": ["mcp__memory__*"],
+    "tools": [],
 }
 
 FACT_CHECKER = {
@@ -91,10 +108,12 @@ FACT_CHECKER = {
 
 {_DWC_CONTEXT}
 
+You have Contentful access to verify claims against DWC's actual published content. Use list_all_content to see what exists, and get_entry_content to cross-reference.
+
 Verify: NEC articles, UL standards, voltage/temperature/ampacity values. Flag products DWC doesn't sell (fiber, data cable, conduit, fittings, breakers, panels). Flag contractor-directed language. Catch hallucinations.
 
 Return JSON: corrections_made (array), accuracy_score (1-100), alignment_score (1-100), audience_score (1-100), corrected_article (title, meta_description, slug, body_markdown, word_count), flagged_claims (array)""",
-    "tools": ["mcp__memory__*"],
+    "tools": ["mcp__contentful__*"],
 }
 
 EDITOR_IN_CHIEF = {
@@ -110,9 +129,10 @@ Return JSON: edits_made (array), overall_assessment (2-3 sentences), final_artic
 CANARY = {
     "description": "Publishing agent that pushes articles to Contentful as drafts and records them in memory",
     "prompt": """When given a final article:
-1. Use publish_draft to create a draft in Contentful
-2. Use record_published_content to log it in memory with title, slug, primary keyword, cluster name, word count, Contentful entry ID
-3. Report the entry ID and status""",
+1. Use search_content_by_slug to verify this slug doesn't already exist in Contentful
+2. Use publish_draft to create a draft in Contentful
+3. Use record_published_content to log it in memory
+4. Report the entry ID and status""",
     "tools": ["mcp__contentful__*", "mcp__memory__*"],
 }
 
@@ -127,15 +147,15 @@ Competitors: {json.dumps(DWC_COMPETITORS[:SCOUT_COMPETITOR_LIMIT], indent=2)}
 Find keywords (KD <= {MAX_KEYWORD_DIFFICULTY}, vol >= {MIN_KEYWORD_VOLUME}) competitors rank for but DWC doesn't. Group into topical clusters.
 
 Workflow:
-1. get_published_content + get_cluster_map for current state
-2. domain_metrics + organic_keywords on distributorwire.com
-3. top_pages + organic_keywords on 2-3 competitors
-4. keywords_overview on promising gaps
-5. update_cluster with new opportunities
-6. record_scout_scan with full report
-7. record_keyword_positions with DWC positions
-8. record_competitor_snapshot for each competitor
+1. list_all_content to see what Contentful already has (source of truth)
+2. get_cluster_map for current cluster strategy
+3. domain_metrics + organic_keywords on distributorwire.com
+4. top_pages + organic_keywords on 2-3 competitors
+5. keywords_overview on promising gaps
+6. update_cluster with new opportunities
+7. record_scout_scan with full report
+8. record_keyword_positions + record_competitor_snapshot
 
-Return JSON: scan_date, dwc_current_metrics, clusters (array with cluster_name, cluster_theme, existing_dwc_content, recommended_topic, additional_keywords), top_pick""",
-    "tools": ["mcp__ahrefs__*", "mcp__memory__*"],
+Return JSON: scan_date, dwc_current_metrics, clusters (array), top_pick""",
+    "tools": ["mcp__ahrefs__*", "mcp__contentful__*", "mcp__memory__*"],
 }
