@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""DWC Content Pipeline - Agent SDK powered content swarm.
+"""Marcus - DWC's AI content strategist.
+
+Named after Marcus Sheridan, whose "They Ask, You Answer" philosophy
+drives DWC's content strategy. Marcus researches, writes, fact-checks,
+and publishes wire & cable content for electrical distributors.
 
 Usage:
     python main.py "topic"               # Run the full pipeline
@@ -17,7 +21,7 @@ from config.settings import ANTHROPIC_API_KEY
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DWC Content Pipeline")
+    parser = argparse.ArgumentParser(description="Marcus - DWC Content Agent")
     parser.add_argument("topic", nargs="?", help="Topic seed for the content pipeline")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--seed", action="store_true", help="Seed memory with existing DWC content (run once)")
@@ -72,9 +76,9 @@ def main():
     result = run_pipeline(args.topic, verbose=args.verbose)
 
     if result.get("status") == "success":
-        print("\nPipeline complete.")
+        print("\nMarcus: Pipeline complete.")
     else:
-        print(f"\nPipeline finished with status: {result.get('status')}")
+        print(f"\nMarcus: Pipeline finished with status: {result.get('status')}")
         if result.get("error"):
             print(f"Error: {result['error']}")
 
