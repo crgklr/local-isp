@@ -32,10 +32,23 @@ MIN_KEYWORD_VOLUME = int(os.getenv("MIN_KEYWORD_VOLUME", "50"))
 SCOUT_COMPETITOR_LIMIT = int(os.getenv("SCOUT_COMPETITOR_LIMIT", "5"))
 SUGGESTIONS_PER_EMAIL = int(os.getenv("SUGGESTIONS_PER_EMAIL", "5"))
 
-# Model configuration
-MODEL = "claude-sonnet-4-6"
-MODEL_RESEARCH = "claude-sonnet-4-6"
-MODEL_WRITER = "claude-sonnet-4-6"
+# Model configuration - right model for the right job
+MODEL_OPUS = "claude-opus-4-6"       # Judgment, writing, editorial taste
+MODEL_SONNET = "claude-sonnet-4-6"   # Research, tool use, structured output
+MODEL_HAIKU = "claude-haiku-4-5"     # Simple routing, API calls
+
+# Agent-specific model assignments
+MODEL_ORCHESTRATOR = MODEL_OPUS      # Quality judgments, revision decisions
+MODEL_DOMAIN_RESEARCHER = MODEL_SONNET
+MODEL_SEO_RESEARCHER = MODEL_SONNET  # Mostly tool calls to Ahrefs
+MODEL_VALUE_ANALYST = MODEL_OPUS     # Nuanced distributor empathy + scoring
+MODEL_OUTLINE_ARCHITECT = MODEL_SONNET
+MODEL_WRITER = MODEL_OPUS            # Prose quality matters most here
+MODEL_FACT_CHECKER = MODEL_SONNET    # Systematic verification
+MODEL_EDITOR = MODEL_OPUS            # Editorial taste, subtle pattern detection
+MODEL_CANARY = MODEL_HAIKU           # Just API calls
+MODEL_SCOUT = MODEL_SONNET           # Mostly tool calls to Ahrefs
+
 MAX_TOKENS = 8192
 MAX_TOKENS_WRITER = 16384
 
