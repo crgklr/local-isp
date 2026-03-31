@@ -1,7 +1,7 @@
 """Contentful MCP tool server - the source of truth for all DWC content.
 
-Since Contentful is API-driven, agents query it directly to know what
-articles exist, what topics are covered, and what's in draft vs published.
+Agents query Contentful directly to know what articles exist. Marcus
+sets the author field on all published drafts.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def _err(msg: str) -> dict:
 
 @tool(
     "publish_draft",
-    "Create a draft entry in Contentful. Does NOT publish, leaves as draft. Returns entry ID.",
+    "Create a draft entry in Contentful. Does NOT publish, leaves as draft. Sets author to Marcus. Returns entry ID.",
     {"title": str, "slug": str, "body": str, "meta_description": str},
 )
 async def publish_draft(args: dict[str, Any]) -> dict:
@@ -47,6 +47,7 @@ async def publish_draft(args: dict[str, Any]) -> dict:
             "slug": {"en-US": args["slug"]},
             "body": {"en-US": args["body"]},
             "metaDescription": {"en-US": args["meta_description"]},
+            "author": {"en-US": "Marcus"},
         }
     }
     try:
